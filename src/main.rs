@@ -4,6 +4,7 @@ pub mod bus;
 
 fn main() {
     println!("PSA-RE-CLIENT");
-    _ = can::read_message_structure();
-    _ = can::save_message_structure();
+    let file = String::from("305.yml");
+    _ = can::load_message(&file);
+    _ = can::save_message(&"208.yml".to_string());
 }
