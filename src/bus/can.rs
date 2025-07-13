@@ -10,14 +10,18 @@ pub struct Translation {
 
 #[derive(Debug, Clone)]
 pub struct Signal {
+    pub alt_names: Option<Vec<String>>,
     pub bits: Option<String>,
     pub data_type: Option<String>,
+    pub signed: Option<bool>,
     pub factor: Option<f64>,
     pub offset: Option<f64>,
     pub min: Option<f64>,
     pub max: Option<f64>,
+    pub units: Option<String>,
     pub comment: Option<Translation>,
     pub values: Vec<(i64, Option<Translation>)>,
+    pub unused: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -68,20 +72,39 @@ impl Translation {
 impl Signal {
     fn from_yaml(yaml: &Yaml) -> Signal {
         let mut signal = Signal {
+            alt_names: None,
             bits: None,
             data_type: None,
+            signed: None,
             factor: None,
             offset: None,
             min: None,
             max: None,
+            units: None,
             comment: None,
             values: Vec::new(),
+            unused: None,
         };
 
         if let Yaml::Hash(hash) = yaml {
             for (key, value) in hash {
                 if let Yaml::String(k) = key {
                     match k.as_str() {
+                        "alt_names" => {
+                            if let Yaml::Array(arr) = value {
+                                let mut alt_names = Vec::new();
+                                for item in arr {
+                                    if let Yaml::String(s) = item {
+                                        alt_names.push(s.clone());
+                                    }
+                                }
+                                if !alt_names.is_empty() {
+                                    signal.alt_names = Some(alt_names);
+                                }
+                            } else {
+                                println!("[WARNING] Wrong type for \"alt_names\".");
+                            }
+                        }
                         "bits" => {
                             if let Yaml::String(v) = value {
                                 signal.bits = Some(v.clone());
@@ -94,6 +117,13 @@ impl Signal {
                                 signal.data_type = Some(v.clone());
                             } else {
                                 println!("[WARNING] Wrong type for \"type\".");
+                            }
+                        }
+                        "signed" => {
+                            if let Yaml::Boolean(v) = value {
+                                signal.signed = Some(v.clone());
+                            } else {
+                                println!("[WARNING] Wrong type for \"signed\".");
                             }
                         }
                         "factor" => {
@@ -136,6 +166,13 @@ impl Signal {
                                 }
                             };
                         }
+                        "units" => {
+                            if let Yaml::String(v) = value {
+                                signal.units = Some(v.clone());
+                            } else {
+                                println!("[WARNING] Wrong type for \"units\".");
+                            }
+                        }
                         "comment" => {
                             signal.comment = Translation::from_yaml(value);
                         }
@@ -151,6 +188,13 @@ impl Signal {
                                 }
                             } else {
                                 println!("[WARNING] Wrong type for \"values\".");
+                            }
+                        }
+                        "unused" => {
+                            if let Yaml::Boolean(v) = value {
+                                signal.unused = Some(v.clone());
+                            } else {
+                                println!("[WARNING] Wrong type for \"unused\".");
                             }
                         }
                         _ => {

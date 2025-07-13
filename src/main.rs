@@ -53,14 +53,18 @@ fn print_can_message(message: &can::CanMessage) {
     println!("Signals:");
     for (signal_name, signal) in &message.signals {
         println!("  {}", signal_name);
+        print_optional_field("    Alternative names", &signal.alt_names);
         print_optional_field("    Bits", &signal.bits);
         print_optional_field("    Type", &signal.data_type);
+        print_optional_field("    Signed", &signal.signed);
         print_optional_field("    Factor", &signal.factor);
         print_optional_field("    Offset", &signal.offset);
         print_optional_field("    Min", &signal.min);
         print_optional_field("    Max", &signal.max);
+        print_optional_field("    Units", &signal.units);
         print_translation("    Comment".to_string(), &signal.comment);
         print_values("    Value".to_string(), &signal.values);
+        print_optional_field("    Unused", &signal.unused);
     }
 }
 
