@@ -239,6 +239,12 @@ impl CanMessage {
                             } else if let Yaml::String(text) = value {
                                 if text.eq("trigger") {
                                     message.periodicity = Some(-1);
+                                } else if text.ends_with(" ms") {
+                                    let number: i64 = text.trim_end_matches(" ms").parse().unwrap();
+                                    message.periodicity = Some(number);
+                                } else if text.ends_with("ms") {
+                                    let number: i64 = text.trim_end_matches("ms").parse().unwrap();
+                                    message.periodicity = Some(number);
                                 } else {
                                     println!("[WARNING] Unable to parse \"periodicity\".");
                                 }
