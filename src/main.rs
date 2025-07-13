@@ -1,14 +1,16 @@
-use crate::bus::can::{self, Translation};
+use crate::bus::can;
 use std::{env, fmt::Debug, process};
 
 pub mod bus;
 
 fn print_usage(program_name: &str) {
-    println!("Usage: {} <yaml-file>", program_name);
-    println!("  yaml-file: Path to the YAML file to load");
+    println!("Usage: {} [OPTION]... [YAML-FILE]...", program_name);
+    println!("  YAML-FILE: Path to the .yaml or .yml file to load");
+    println!("OPTIONS:");
+    println!("  -s, --show      show loaded CAN message");
     println!("");
     println!("Example:");
-    println!("  {} can_message.yaml", program_name);
+    println!("  {} - s can_message.yaml", program_name);
 }
 
 fn print_optional_field<T: Debug>(name: &str, field: &Option<T>) {
@@ -17,7 +19,7 @@ fn print_optional_field<T: Debug>(name: &str, field: &Option<T>) {
     }
 }
 
-fn print_translation(mut name: String, field: &Option<Translation>) {
+fn print_translation(mut name: String, field: &Option<can::Translation>) {
     if let Some(translation) = field {
         name.push_str(" EN");
         print_optional_field(&name, &translation.en);
@@ -28,7 +30,7 @@ fn print_translation(mut name: String, field: &Option<Translation>) {
     }
 }
 
-fn print_values(name: String, value_vec: &Vec<(i64, Option<Translation>)>) {
+fn print_values(name: String, value_vec: &Vec<(i64, Option<can::Translation>)>) {
     for val in value_vec {
         let val_str = format!(" = 0x{:X}", val.0);
         let line = name.clone() + &val_str;
@@ -36,39 +38,20 @@ fn print_values(name: String, value_vec: &Vec<(i64, Option<Translation>)>) {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-    
-    if args.len() != 2 {
-        eprintln!("Error: Incorrect number of arguments");
-        print_usage(&args[0]);
-        process::exit(1);
-    }
-    
-    let yaml_file = &args[1];
-    
-    // Check if help is requested
-    if yaml_file == "--help" || yaml_file == "-h" {
-        print_usage(&args[0]);
-        return Ok(());
-    }
-
-    println!("PSA-RE-CLIENT opening file {}.", yaml_file);
-    let can_message = can::CanMessage::from_yaml_file(&yaml_file)?;
-    
+fn print_can_message(message: &can::CanMessage) {
     println!("Loaded CAN Message:");
-    print_optional_field("ID", &can_message.id);
-    print_optional_field("Name", &can_message.name);
-    print_optional_field("Alternative names", &can_message.alt_names);
-    print_optional_field("Length", &can_message.length);
-    print_optional_field("Type", &can_message.bus_type);
-    print_optional_field("Periodicity", &can_message.periodicity);
-    println!("Senders: {:?}", can_message.senders);
-    println!("Receivers: {:?}", can_message.receivers);
-    print_translation("Comment".to_string(), &can_message.comment);
+    print_optional_field("ID", &message.id);
+    print_optional_field("Name", &message.name);
+    print_optional_field("Alternative names", &message.alt_names);
+    print_optional_field("Length", &message.length);
+    print_optional_field("Type", &message.bus_type);
+    print_optional_field("Periodicity", &message.periodicity);
+    println!("Senders: {:?}", message.senders);
+    println!("Receivers: {:?}", message.receivers);
+    print_translation("Comment".to_string(), &message.comment);
 
     println!("Signals:");
-    for (signal_name, signal) in &can_message.signals {
+    for (signal_name, signal) in &message.signals {
         println!("  {}", signal_name);
         print_optional_field("    Bits", &signal.bits);
         print_optional_field("    Type", &signal.data_type);
@@ -78,6 +61,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print_optional_field("    Max", &signal.max);
         print_translation("    Comment".to_string(), &signal.comment);
         print_values("    Value".to_string(), &signal.values);
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+
+    let program_name = &args[0];
+    let mut yaml_file: &str = "";
+    let mut show_message: bool = false;
+
+    for i in 1..args.len() {
+        if args[i].ends_with(".yml") {
+            yaml_file = &args[i];
+        } else
+        if args[i] == "--help" || args[i] == "-h" {
+            print_usage(&program_name);
+            return Ok(());
+        } else
+        if args[i] == "--show" || args[i] == "-s" {
+            show_message = true;
+        }
+    }
+
+    if yaml_file.is_empty() {
+        eprintln!("Error: Need path to .yml file.");
+        print_usage(&program_name);
+        process::exit(1);
+    }
+
+    println!("PSA-RE-CLIENT opening file {}.", yaml_file);
+    let can_message = can::CanMessage::from_yaml_file(&yaml_file)?;
+
+    if show_message {
+        print_can_message(&can_message);
     }
     
     Ok(())
