@@ -1,16 +1,17 @@
-use crate::bus::can;
-use std::{env, fmt::Debug, process};
+use crate::bus::can::{self, CanMessage};
+use std::{env, fmt::Debug, fs, process};
 
 pub mod bus;
 
 fn print_usage(program_name: &str) {
-    println!("Usage: {} [OPTION]... [YAML-FILE]...", program_name);
-    println!("  YAML-FILE: Path to the .yaml or .yml file to load");
+    println!("Usage: {} [OPTION]... [YAML-DIR]...", program_name);
+    println!("  YAML-DIR: Directory where .yaml or .yml files are located");
     println!("OPTIONS:");
-    println!("  -s, --show      show loaded CAN message");
+    println!("  -h, --help      show this usage explanation");
+    println!("  -s, --show      show loaded CAN messages");
     println!("");
     println!("Example:");
-    println!("  {} - s can_message.yaml", program_name);
+    println!("  {} -s ../PSA-RE/buses/AEE2004.full/LS.CONF/", program_name);
 }
 
 fn print_optional_field<T: Debug>(name: &str, field: &Option<T>) {
@@ -72,34 +73,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let program_name = &args[0];
-    let mut yaml_file: &str = "";
+    let mut path: &str = "";
     let mut show_message: bool = false;
+    let mut can_messages: Vec<CanMessage> = Vec::new();
 
     for i in 1..args.len() {
-        if args[i].ends_with(".yml") {
-            yaml_file = &args[i];
-        } else
-        if args[i] == "--help" || args[i] == "-h" {
-            print_usage(&program_name);
-            return Ok(());
-        } else
-        if args[i] == "--show" || args[i] == "-s" {
-            show_message = true;
-        }
+        if args[i].starts_with("-") { // OPTIONS
+            if args[i] == "--help" || args[i] == "-h" {
+                print_usage(&program_name);
+                return Ok(());
+            } else
+            if args[i] == "--show" || args[i] == "-s" {
+                show_message = true;
+            }
+        } else { // PATH
+            path = &args[i];
+        }        
     }
 
-    if yaml_file.is_empty() {
-        eprintln!("Error: Need path to .yml file.");
+    if path.is_empty() {
+        eprintln!("Error: Need to specify the path to directory containing .yml files.");
         print_usage(&program_name);
         process::exit(1);
     }
 
-    println!("PSA-RE-CLIENT opening file {}.", yaml_file);
-    let can_message = can::CanMessage::from_yaml_file(&yaml_file)?;
+    for file_in_path in fs::read_dir(path)? {
+        let file_path = file_in_path?;
+        let f_path = file_path.path();
 
-    if show_message {
-        print_can_message(&can_message);
+        if f_path.is_file() {
+            if let Some(f_ext) = f_path.extension() {
+                if f_ext == "yml" || f_ext == "yaml" {
+                    if let Some(file_path_str) = f_path.to_str() {
+                        println!("PSA-RE-CLIENT opening file {}.", file_path_str);
+                        let can_message = can::CanMessage::from_yaml_file(&file_path_str)?;
+                        if show_message {
+                            print_can_message(&can_message);
+                        }
+                        can_messages.push(can_message);
+                    }
+                }
+            }
+        }
     }
-    
     Ok(())
 }
