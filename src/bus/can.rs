@@ -209,7 +209,7 @@ impl Signal {
 }
 
 impl CanMessage {
-    pub fn from_yaml_str(yaml_str: &str) -> Result<CanMessage, Box<dyn std::error::Error>> {
+    fn from_yaml_str(yaml_str: &str) -> Result<CanMessage, Box<dyn std::error::Error>> {
         let docs = YamlLoader::load_from_str(yaml_str)?;
         let doc = &docs[0];
         

@@ -1,6 +1,7 @@
-use crate::bus::can::{self, CanMessage};
+use crate::{bus::can::{self, CanMessage}, config::Config};
 use std::{env, fmt::Debug, fs, process};
 
+pub mod config;
 pub mod bus;
 
 fn print_usage(program_name: &str) {
@@ -72,32 +73,26 @@ fn print_can_message(message: &can::CanMessage) {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
+    let mut config: config::Config = Config::load_config_file("config.yaml");
+
     let program_name = &args[0];
-    let mut path: &str = "";
-    let mut show_message: bool = false;
     let mut can_messages: Vec<CanMessage> = Vec::new();
 
     for i in 1..args.len() {
         if args[i].starts_with("-") { // OPTIONS
             if args[i] == "--help" || args[i] == "-h" {
                 print_usage(&program_name);
-                return Ok(());
+                process::exit(0);
             } else
             if args[i] == "--show" || args[i] == "-s" {
-                show_message = true;
+                config.show_messages = true;
             }
-        } else { // PATH
-            path = &args[i];
+        } else { // DB DIR
+            config.database_dir = args[i].clone();
         }        
     }
 
-    if path.is_empty() {
-        eprintln!("Error: Need to specify the path to directory containing .yml files.");
-        print_usage(&program_name);
-        process::exit(1);
-    }
-
-    for file_in_path in fs::read_dir(path)? {
+    for file_in_path in fs::read_dir(config.database_dir)? {
         let file_path = file_in_path?;
         let f_path = file_path.path();
 
@@ -107,7 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(file_path_str) = f_path.to_str() {
                         println!("PSA-RE-CLIENT opening file {}.", file_path_str);
                         let can_message = can::CanMessage::from_yaml_file(&file_path_str)?;
-                        if show_message {
+                        if config.show_messages {
                             print_can_message(&can_message);
                         }
                         can_messages.push(can_message);
