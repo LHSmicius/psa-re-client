@@ -1,3 +1,4 @@
+use log::{debug, warn};
 use std::fs;
 use yaml_rust2::{Yaml, YamlLoader};
 
@@ -46,7 +47,7 @@ impl Translation {
                 fr: None,
                 de: None,
             };
-            
+
             for (key, value) in hash {
                 if let (Yaml::String(k), Yaml::String(v)) = (key, value) {
                     match k.as_str() {
@@ -54,14 +55,14 @@ impl Translation {
                         "fr" => translation.fr = Some(v.clone()),
                         "de" => translation.de = Some(v.clone()),
                         _ => {
-                            println!("[WARNING] Unsupported language \"{}\".", k);
+                            warn!("[WARNING] Unsupported language \"{}\".", k);
                         }
                     }
                 } else {
-                    println!("[WARNING] Wrong type for language translation.");
+                    warn!("[WARNING] Wrong type for language translation.");
                 }
             }
-            
+
             Some(translation)
         } else {
             None
@@ -102,28 +103,28 @@ impl Signal {
                                     signal.alt_names = Some(alt_names);
                                 }
                             } else {
-                                println!("[WARNING] Wrong type for \"alt_names\".");
+                                warn!("[WARNING] Wrong type for \"alt_names\".");
                             }
                         }
                         "bits" => {
                             if let Yaml::String(v) = value {
                                 signal.bits = Some(v.clone());
                             } else {
-                                println!("[WARNING] Wrong type for \"bits\".");
+                                warn!("[WARNING] Wrong type for \"bits\".");
                             }
                         }
                         "type" => {
                             if let Yaml::String(v) = value {
                                 signal.data_type = Some(v.clone());
                             } else {
-                                println!("[WARNING] Wrong type for \"type\".");
+                                warn!("[WARNING] Wrong type for \"type\".");
                             }
                         }
                         "signed" => {
                             if let Yaml::Boolean(v) = value {
                                 signal.signed = Some(v.clone());
                             } else {
-                                println!("[WARNING] Wrong type for \"signed\".");
+                                warn!("[WARNING] Wrong type for \"signed\".");
                             }
                         }
                         "factor" => {
@@ -131,7 +132,7 @@ impl Signal {
                                 Yaml::Real(v) => v.parse().ok(),
                                 Yaml::Integer(v) => Some(*v as f64),
                                 _ => {
-                                    println!("[WARNING] Wrong type for \"factor\".");
+                                    warn!("[WARNING] Wrong type for \"factor\".");
                                     None
                                 }
                             };
@@ -141,7 +142,7 @@ impl Signal {
                                 Yaml::Real(v) => v.parse().ok(),
                                 Yaml::Integer(v) => Some(*v as f64),
                                 _ => {
-                                    println!("[WARNING] Wrong type for \"offset\".");
+                                    warn!("[WARNING] Wrong type for \"offset\".");
                                     None
                                 }
                             };
@@ -151,7 +152,7 @@ impl Signal {
                                 Yaml::Real(v) => v.parse().ok(),
                                 Yaml::Integer(v) => Some(*v as f64),
                                 _ => {
-                                    println!("[WARNING] Wrong type for \"min\".");
+                                    warn!("[WARNING] Wrong type for \"min\".");
                                     None
                                 }
                             };
@@ -161,7 +162,7 @@ impl Signal {
                                 Yaml::Real(v) => v.parse().ok(),
                                 Yaml::Integer(v) => Some(*v as f64),
                                 _ => {
-                                    println!("[WARNING] Wrong type for \"max\".");
+                                    warn!("[WARNING] Wrong type for \"max\".");
                                     None
                                 }
                             };
@@ -170,7 +171,7 @@ impl Signal {
                             if let Yaml::String(v) = value {
                                 signal.units = Some(v.clone());
                             } else {
-                                println!("[WARNING] Wrong type for \"units\".");
+                                warn!("[WARNING] Wrong type for \"units\".");
                             }
                         }
                         "comment" => {
@@ -183,22 +184,22 @@ impl Signal {
                                         let explanation = Translation::from_yaml(value_val);
                                         signal.values.push((value_num.clone(), explanation));
                                     } else {
-                                        println!("[WARNING] Expected integer in field \"values\".");
+                                        warn!("[WARNING] Expected integer in field \"values\".");
                                     }
                                 }
                             } else {
-                                println!("[WARNING] Wrong type for \"values\".");
+                                warn!("[WARNING] Wrong type for \"values\".");
                             }
                         }
                         "unused" => {
                             if let Yaml::Boolean(v) = value {
                                 signal.unused = Some(v.clone());
                             } else {
-                                println!("[WARNING] Wrong type for \"unused\".");
+                                warn!("[WARNING] Wrong type for \"unused\".");
                             }
                         }
                         _ => {
-                            println!("[WARNING] Unknown CAN signal parameter \"{}\".", k);
+                            warn!("[WARNING] Unknown CAN signal parameter \"{}\".", k);
                         }
                     }
                 }
@@ -212,7 +213,7 @@ impl CanMessage {
     fn from_yaml_str(yaml_str: &str) -> Result<CanMessage, Box<dyn std::error::Error>> {
         let docs = YamlLoader::load_from_str(yaml_str)?;
         let doc = &docs[0];
-        
+
         let mut message = CanMessage {
             id: None,
             name: None,
@@ -226,7 +227,7 @@ impl CanMessage {
             signals: Vec::new(),
         };
 
-        println!("Loading CAN message header.");
+        debug!("Loading CAN message header.");
         if let Yaml::Hash(hash) = doc {
             for (key, value) in hash {
                 if let Yaml::String(k) = key {
@@ -242,7 +243,7 @@ impl CanMessage {
                             if let Yaml::String(v) = value {
                                 message.name = Some(v.clone());
                             } else {
-                                println!("[WARNING] Wrong type for \"name\".");
+                                warn!("[WARNING] Wrong type for \"name\".");
                             }
                         }
                         "alt_names" => {
@@ -257,14 +258,14 @@ impl CanMessage {
                                     message.alt_names = Some(alt_names);
                                 }
                             } else {
-                                println!("[WARNING] Wrong type for \"alt_names\".");
+                                warn!("[WARNING] Wrong type for \"alt_names\".");
                             }
                         }
                         "length" => {
                             if let Yaml::Integer(v) = value {
                                 message.length = Some(*v);
                             } else {
-                                println!("[WARNING] Wrong type for \"length\".");
+                                warn!("[WARNING] Wrong type for \"length\".");
                             }
                         }
                         "comment" => {
@@ -274,7 +275,7 @@ impl CanMessage {
                             if let Yaml::String(v) = value {
                                 message.bus_type = Some(v.clone());
                             } else {
-                                println!("[WARNING] Wrong type for \"type\".");
+                                warn!("[WARNING] Wrong type for \"type\".");
                             }
                         }
                         "periodicity" => {
@@ -290,10 +291,10 @@ impl CanMessage {
                                     let number: i64 = text.trim_end_matches("ms").parse().unwrap();
                                     message.periodicity = Some(number);
                                 } else {
-                                    println!("[WARNING] Unable to parse \"periodicity\".");
+                                    warn!("[WARNING] Unable to parse \"periodicity\".");
                                 }
                             } else {
-                                println!("[WARNING] Wrong type for \"periodicity\".");
+                                warn!("[WARNING] Wrong type for \"periodicity\".");
                             }
                         }
                         "senders" => {
@@ -304,7 +305,7 @@ impl CanMessage {
                                     }
                                 }
                             } else {
-                                println!("[WARNING] Wrong type for \"senders\".");
+                                warn!("[WARNING] Wrong type for \"senders\".");
                             }
                         }
                         "receivers" => {
@@ -315,24 +316,24 @@ impl CanMessage {
                                     }
                                 }
                             } else {
-                                println!("[WARNING] Wrong type for \"receivers\".");
+                                warn!("[WARNING] Wrong type for \"receivers\".");
                             }
                         }
                         "signals" => {
                             if let Yaml::Hash(signals_hash) = value {
                                 for (signal_key, signal_value) in signals_hash {
                                     if let Yaml::String(signal_name) = signal_key {
-                                        println!("Loading CAN signal: {}.", signal_name);
+                                        debug!("Loading CAN signal: {}.", signal_name);
                                         let signal = Signal::from_yaml(signal_value);
                                         message.signals.push((signal_name.clone(), signal));
                                     }
                                 }
                             } else {
-                                println!("[WARNING] Wrong type for \"signals\".");
+                                warn!("[WARNING] Wrong type for \"signals\".");
                             }
                         }
                         _ => {
-                            println!("[WARNING] Unknown CAN message parameter \"{}\".", k);
+                            warn!("[WARNING] Unknown CAN message parameter \"{}\".", k);
                         }
                     }
                 }
