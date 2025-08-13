@@ -16,14 +16,28 @@ pub fn ui(frame: &mut Frame, app: &app::App) {
         .borders(widgets::Borders::ALL)
         .style(style::Style::default());
 
-    let title_str = String::from("PSA-RE-TUI    ") + app.app_config.database_dir.as_str();
     let title = widgets::Paragraph::new(text::Text::styled(
-        title_str,
+        "PSA-RAT",
         style::Style::default().fg(style::Color::Green),
     ))
     .block(title_block);
 
-    frame.render_widget(title, chunks[0]);
+    let work_dir_block = widgets::Block::default()
+        .borders(widgets::Borders::ALL)
+        .style(style::Style::default());
+
+    let work_dir = widgets::Paragraph::new(text::Text::styled(
+        app.app_config.database_dir.clone(),
+        style::Style::default().fg(style::Color::Cyan),
+    ))
+    .block(work_dir_block);
+
+    let header_chunks = layout::Layout::default()
+        .direction(layout::Direction::Horizontal)
+        .constraints([layout::Constraint::Length(10), layout::Constraint::Min(80)])
+        .split(chunks[0]);
+    frame.render_widget(title, header_chunks[0]);
+    frame.render_widget(work_dir, header_chunks[1]);
 
     // Center chunk
     let mut list_items = Vec::<widgets::ListItem>::new();
